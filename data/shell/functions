@@ -1,0 +1,49 @@
+#!/bin/bash
+SHELL_DATE=/usr/bin/date
+SHELL_DOCKER=/usr/bin/docker
+SHELL_ECHO=/usr/bin/echo
+SHELL_GREP=/usr/bin/grep
+
+function echo_tips() {
+    ${SHELL_ECHO} -e "\033[35m $1 \033[0m"
+}
+
+function echo_docker_container_info(){
+    CONTAINER_NAME=$1
+    echo_tips "\n运行状态："
+    ${SHELL_DOCKER} ps -a | ${SHELL_GREP} --color=auto ${CONTAINER_NAME}
+    echo_tips "\n端口信息："
+    ${SHELL_DOCKER} port ${CONTAINER_NAME}
+    echo_tips "\n网络状态："
+    ${SHELL_DOCKER} exec -it ${CONTAINER_NAME} /sbin/ifconfig eth0
+    echo_tips "\n路由状态："
+    ${SHELL_DOCKER} exec -it ${CONTAINER_NAME} /usr/sbin/route -n
+    echo_tips "\n网络连接："
+    ${SHELL_DOCKER} exec -it ${CONTAINER_NAME} /usr/bin/netstat -antop
+    echo_tips "\n进程信息："
+    ${SHELL_DOCKER} exec -it ${CONTAINER_NAME} /usr/bin/ps aux
+}
+
+function docker_build(){
+    DOCKERFILE_DIR_BASE=$1
+    IMAGE_NAME=$2
+    IMAGE_NAMESPACE=ppno.net
+    IMAGE_TAG=`${SHELL_DATE} +"%y%m%d"`
+    IMAGE_FULL_NAME=${IMAGE_NAMESPACE}/${IMAGE_NAME}
+    IMAGE_FULL_NAME_TAG=${IMAGE_FULL_NAME}:${IMAGE_TAG}
+    IMAGE_FULL_NAME_LATEST=${IMAGE_FULL_NAME}:latest
+    DOCKERFILE_DIR=${DOCKERFILE_DIR_BASE}/${IMAGE_NAME}
+
+    IMAGE_EXISTS=`${SHELL_DOCKER} images ${IMAGE_FULL_NAME_TAG} | ${SHELL_GREP} -v REPOSITORY`
+    if [ -n "${IMAGE_EXISTS}" ]; then
+        ${SHELL_DOCKER} rmi ${IMAGE_FULL_NAME_TAG}
+    fi
+
+    ${SHELL_DOCKER} build --network=host -t ${IMAGE_FULL_NAME_TAG} ${DOCKERFILE_DIR}
+
+    IMAGE_EXISTS=`${SHELL_DOCKER} images ${IMAGE_FULL_NAME_TAG} | ${SHELL_GREP} -v REPOSITORY`
+    if [ -n "${IMAGE_EXISTS}" ]; then
+        ${SHELL_DOCKER} tag ${IMAGE_FULL_NAME_TAG} ${IMAGE_FULL_NAME_LATEST}
+    fi
+    ${SHELL_DOCKER} images ${IMAGE_FULL_NAME}
+}

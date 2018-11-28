@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# 实例的端口号。
+PORT=$2
+
+# 实例的类型。
+ROLE=$3
+
+# 实例的集群名称。
+REPLSETNAME=$4
+
+# 脚本所在目录。
+# 这里要注意下，如果写 /usr/bin/cd 会有问题。
+PATH_SHELL_FOLDER=$(cd `dirname $0`;/usr/bin/pwd)
+
+# 实例文件夹根目录。
+PATH_DATA_ROOT=${PATH_SHELL_FOLDER}/${PORT}
+
+# 实例的配置文件。
+PATH_CONF=${PATH_DATA_ROOT}/conf/mongodb.${PORT}.conf
+
+# 服务的配置文件。
+PATH_SERVICE=/usr/lib/systemd/system/mongod.${PORT}.service
+
+# 实例的配置文件模板。
+TEMPLATE_CONF=${PATH_SHELL_FOLDER}/mongod.conf.sample
+
+# 根据实例的类型修改配置文件模板。
+if [[ "mongos" == ${ROLE} ]];
+then
+    TEMPLATE_CONF=${PATH_SHELL_FOLDER}/mongos.conf.sample
+elif [[ "single" = ${ROLE} ]]; 
+then
+    TEMPLATE_CONF=${PATH_SHELL_FOLDER}/mongod.conf.single
+fi
+
+# 服务的配置文件模板。
+TEMPLATE_SERVICE=${PATH_SHELL_FOLDER}/mongod.service.sample
+
+# 根据实例的类型修改配置文件模板。
+if [[ "mongos" == ${ROLE} ]];
+then
+    TEMPLATE_SERVICE=${PATH_SHELL_FOLDER}/mongos.service.sample
+fi
+
+install_service() {
+if [ ! -d ${PATH_DATA_ROOT} ];
+then
+    myecho "创建实例文件夹："
+    /usr/bin/mkdir -p ${PATH_DATA_ROOT}/conf
+    /usr/bin/mkdir -p ${PATH_DATA_ROOT}/data
+    /usr/bin/mkdir -p ${PATH_DATA_ROOT}/logs
+    /usr/bin/mkdir -p ${PATH_DATA_ROOT}/tmp
+
+    myecho "创建实例配置文件："
+    /usr/bin/cp ${TEMPLATE_CONF} ${PATH_CONF}
+    /usr/bin/sed -i "s/\${PORT}/${PORT}/g" ${PATH_CONF}
+    /usr/bin/sed -i "s/\${REPLSETNAME}/${REPLSETNAME}/g" ${PATH_CONF}
+
+    myecho "创建服务配置文件："
+    /usr/bin/cp ${TEMPLATE_SERVICE} ${PATH_SERVICE}
+    /usr/bin/sed -i "s/\${PORT}/${PORT}/g" ${PATH_SERVICE}
+
+    if [[ "config" == ${ROLE} ]];
+    then
+        /usr/bin/sed -i "s/\${CLUSTERROLE}/configsvr/g" ${PATH_CONF}
+    elif [[ "shard" == ${ROLE} ]];
+    then
+        /usr/bin/sed -i "s/\${CLUSTERROLE}/shardsvr/g" ${PATH_CONF}
+    fi
+
+    /usr/bin/chown mongod.mongod -R ${PATH_DATA_ROOT}
+
+    myecho "开启服务并查看服务状态："
+    /usr/bin/systemctl daemon-reload
+    /sbin/service mongod.${PORT} start
+    /sbin/service mongod.${PORT} status
+
+    myecho "查看进程信息："
+    /usr/bin/ps -ef | /usr/bin/grep mongo | /usr/bin/grep -v "ps" | /usr/bin/grep -v "^root"
+else
+    /usr/bin/echo "实例根目录存在，如果需要重新配置，请先卸载服务，然后再进行。"
+fi
+}
+
+uninstall_service() {
+    myecho "查看服务状态并关闭服务："
+    /usr/bin/systemctl daemon-reload
+    /sbin/service mongod.${PORT} status
+    /sbin/service mongod.${PORT} stop
+
+    myecho "禁用服务并删除服务配置："
+    /usr/bin/systemctl disable mongod.${PORT}
+    /usr/bin/rm -rf ${PATH_SERVICE}
+
+    myecho "删除实例文件夹："
+    /usr/bin/rm -rf ${PATH_DATA_ROOT}
+}
+
+myecho() {
+    /usr/bin/echo -e "\033[32m$1\033[0m"
+}
+
+case $1 in
+    "install") install_service ;;
+    "uninstall") uninstall_service ;;
+esac
