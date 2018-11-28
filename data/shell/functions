@@ -3,18 +3,21 @@ SHELL_CHMOD=/usr/bin/chmod
 SHELL_CHOWN=/usr/bin/chown
 SHELL_CP=/usr/bin/cp
 SHELL_DATE=/usr/bin/date
+SHELL_DIRNAME=/usr/bin/dirname
 SHELL_DOCKER=/usr/bin/docker
 SHELL_ECHO=/usr/bin/echo
 SHELL_GREP=/usr/bin/grep
 SHELL_MKDIR=/usr/bin/mkdir
 SHELL_OPENSSL=/usr/bin/openssl
 SHELL_PS=/usr/bin/ps
+SHELL_PWD=/usr/bin/pwd
 SHELL_RM=/usr/bin/rm
 SHELL_SED=/usr/bin/sed
 SHELL_SERVICE=/sbin/service
 SHELL_SYSTEMCTL=/usr/bin/systemctl
 SHELL_TREE=/usr/bin/tree
 SHELL_YUM=/usr/bin/yum
+SHELL_ZIP=/usr/bin/zip
 
 
 # ============================================================

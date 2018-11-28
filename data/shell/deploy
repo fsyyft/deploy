@@ -7,7 +7,7 @@ ROOT_PATH_MONGODB=/data/database/mongodb
 
 # 脚本所在目录。
 # 这里要注意下，如果写 /usr/bin/cd 会有问题。
-PATH_SHELL_FOLDER=$(cd `dirname $0`;/usr/bin/pwd)
+PATH_SHELL_FOLDER=$(cd `${SHELL_DIRNAME} $0`;${SHELL_PWD})
 
 # 复制常用函数文件。
 function copy_function() {

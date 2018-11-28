@@ -14,7 +14,7 @@ CONFIGDB=$4
 
 # 脚本所在目录。
 # 这里要注意下，如果写 /usr/bin/cd 会有问题。
-PATH_SHELL_FOLDER=$(cd `dirname $0`;/usr/bin/pwd)
+PATH_SHELL_FOLDER=$(cd `${SHELL_DIRNAME} $0`;${SHELL_PWD})
 
 # 实例文件夹根目录。
 PATH_DATA_ROOT=${PATH_SHELL_FOLDER}/${PORT}
@@ -102,6 +102,23 @@ function uninstall_service() {
     echo_green "禁用服务并删除服务配置："
     ${SHELL_SYSTEMCTL} disable mongod.${PORT}
     ${SHELL_RM} -rf ${PATH_SERVICE}
+
+    # 备份实例数据。
+    PWD_CURRENT=`${SHELL_PWD}`
+    TMP_NAME=mongodb.${PORT}.`${SHELL_DATE} +%y%m%d%H%M`
+    TMP_DIR=/tmp/${TMP_NAME}
+    TMP_ZIPFILE=/tmp/${TMP_NAME}.zip
+
+    if [[ -d ${TMP_DIR} ]];
+    then
+        ${SHELL_RM} -rf ${TMP_DIR}
+    fi
+    ${SHELL_CP} -r ${PATH_DATA_ROOT} ${TMP_DIR}
+    cd ${TMP_DIR}
+    ${SHELL_ZIP} -r -v -9 -T ${TMP_ZIPFILE} data conf
+    cd ${PWD_CURRENT}
+
+    echo_yellow "备份数据到 ${TMP_ZIPFILE}。"
 
     echo_green "删除实例文件夹："
     ${SHELL_RM} -rf ${PATH_DATA_ROOT}
