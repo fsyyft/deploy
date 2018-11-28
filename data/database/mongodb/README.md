@@ -66,8 +66,6 @@
 
 ```bash
 [fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2741
-MongoDB shell version v4.0.4
-connecting to: mongodb://127.0.0.1:2741/
 > use test;
 switched to db test
 > db.test.insert({"test": "hello"});
@@ -159,7 +157,7 @@ shard1:PRIMARY> db.auth("mongo", "mongo");
 
 ```bash
 [fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2721
-> config = { _id: "shard3", members: [ { _id: 31, host: "127.0.0.1:2731" }, { _id: 32, host: "127.0.0.1:2732" }, { _id: 33, host: "127.0.0.1:2733" } ] };
+> config = { _id: "shard2", members: [ { _id: 21, host: "127.0.0.1:2721" }, { _id: 22, host: "127.0.0.1:2722" }, { _id: 23, host: "127.0.0.1:2723" } ] };
 > rs.initiate(config);
 { "ok" : 1 }
 shard2:PRIMARY> db.createUser({ user: "mongo", pwd: "mongo", roles: [ "root" ] });
@@ -169,8 +167,8 @@ shard2:PRIMARY> db.auth("mongo", "mongo");
 ```
 
 ```bash
-[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2711
-> config = { _id: "shard1", members: [ { _id: 11, host: "127.0.0.1:2711" }, { _id: 12, host: "127.0.0.1:2712" }, { _id: 13, host: "127.0.0.1:2713" } ] };
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2731
+> config = { _id: "shard3", members: [ { _id: 31, host: "127.0.0.1:2731" }, { _id: 32, host: "127.0.0.1:2732" }, { _id: 33, host: "127.0.0.1:2733" } ] };
 > rs.initiate(config);
 { "ok" : 1 }
 shard3:PRIMARY> db.createUser({ user: "mongo", pwd: "mongo", roles: [ "root" ] });
