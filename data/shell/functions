@@ -1,12 +1,39 @@
 #!/bin/bash
+SHELL_CHMOD=/usr/bin/chmod
+SHELL_CHOWN=/usr/bin/chown
+SHELL_CP=/usr/bin/cp
 SHELL_DATE=/usr/bin/date
 SHELL_DOCKER=/usr/bin/docker
 SHELL_ECHO=/usr/bin/echo
 SHELL_GREP=/usr/bin/grep
+SHELL_MKDIR=/usr/bin/mkdir
+SHELL_PS=/usr/bin/ps
+SHELL_RM=/usr/bin/rm
+SHELL_SED=/usr/bin/sed
+SHELL_SERVICE=/sbin/service
+SHELL_SYSTEMCTL=/usr/bin/systemctl
+SHELL_TREE=/usr/bin/tree
+SHELL_YUM=/usr/bin/yum
+
+
+# ============================================================
+# 向控制台输出不同颜色的字符。
+# ============================================================
+
+# 向控制台输出绿色字体。
+# 参数1：待输出的文本。
+function echo_green() {
+    /usr/bin/echo -e "\033[32m$1\033[0m"
+}
 
 function echo_tips() {
     ${SHELL_ECHO} -e "\033[35m $1 \033[0m"
 }
+
+# ============================================================
+# 以下是 Docker 相关的函数。
+# ============================================================
+
 
 function echo_docker_container_info(){
     CONTAINER_NAME=$1
