@@ -7,6 +7,7 @@ SHELL_DOCKER=/usr/bin/docker
 SHELL_ECHO=/usr/bin/echo
 SHELL_GREP=/usr/bin/grep
 SHELL_MKDIR=/usr/bin/mkdir
+SHELL_OPENSSL=/usr/bin/openssl
 SHELL_PS=/usr/bin/ps
 SHELL_RM=/usr/bin/rm
 SHELL_SED=/usr/bin/sed

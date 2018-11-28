@@ -45,6 +45,9 @@ function yum_install_mongodb() {
     
     # 使用 yum 安装软件。
     ${SHELL_YUM} -y install mongodb-org --enablerepo=${REPO_NAME}
+    ${SHELL_YUM} -y update mongodb-org --enablerepo=${REPO_NAME}
+
+    echo_green "软件安装、更新完成。"
 
     # 复制服务所需要的文件。
     if [ ! -d ${ROOT_PATH_MONGODB} ];
@@ -57,10 +60,15 @@ function yum_install_mongodb() {
     ${SHELL_CP} ${PATH_SHELL_FOLDER}/../database/mongodb/mongod.conf.single ${ROOT_PATH_MONGODB} 
     ${SHELL_CP} ${PATH_SHELL_FOLDER}/../database/mongodb/mongod.service.sample ${ROOT_PATH_MONGODB} 
 
+    if [ ! -f ${ROOT_PATH_MONGODB}/keyfile.dat ];
+    then
+        ${SHELL_OPENSSL} rand -base64 512 > ${ROOT_PATH_MONGODB}/keyfile.dat
+    fi
+
     # 修改目录权限。
     ${SHELL_CHOWN} mongod.mongod -R ${ROOT_PATH_MONGODB}
     ${SHELL_CHMOD} a+x ${ROOT_PATH_MONGODB}/deploy 
-    ${SHELL_CHMOD} a-w ${ROOT_PATH_MONGODB}/deploy 
+    ${SHELL_CHMOD} 600 ${ROOT_PATH_MONGODB}/keyfile.dat
     ${SHELL_CHMOD} a-w ${ROOT_PATH_MONGODB}/mongod.conf.sample
     ${SHELL_CHMOD} a-w ${ROOT_PATH_MONGODB}/mongod.conf.single
     ${SHELL_CHMOD} a-w ${ROOT_PATH_MONGODB}/mongod.service.sample
@@ -68,8 +76,8 @@ function yum_install_mongodb() {
     # 移除默认服务。
     ${SHELL_SYSTEMCTL} disable mongod
 
-    echo_green "操作完成。"
     ${SHELL_TREE} -ugD -L 1 ${ROOT_PATH_MONGODB}
+    echo_green "操作完成。"
 }
 
 case $1 in
