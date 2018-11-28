@@ -79,6 +79,15 @@ function yum_install_mongodb() {
 
     # 移除默认服务。
     ${SHELL_SYSTEMCTL} disable mongod
+    
+    PATH_BACKUP_ROOT=/data/backup/mongodb
+
+    # 如果备份文件夹不存在，先创建。
+    if [[ ! -d ${PATH_BACKUP_ROOT} ]]
+    then
+        ${SHELL_MKDIR} -p ${PATH_BACKUP_ROOT}
+    fi
+    ${SHELL_CHOWN} mongod.mongod -R ${PATH_BACKUP_ROOT}
 
     ${SHELL_TREE} -ugD -L 1 ${ROOT_PATH_MONGODB}
     echo_green "操作完成。"

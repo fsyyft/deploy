@@ -92,6 +92,30 @@ else
 fi
 }
 
+# 备份。
+function backup() {
+    # 备份实例数据。
+    PWD_CURRENT=`${SHELL_PWD}`
+    PATH_BACKUP_ROOT=/data/backup/mongodb
+    BACKUP_NAME=mongodb.${PORT}.`${SHELL_DATE} +%y%m%d%H%M`
+    BACKUP_TMP_DIR=${PATH_BACKUP_ROOT}/${BACKUP_NAME}
+    BACKUP_ZIPFILE=${PATH_BACKUP_ROOT}/${BACKUP_NAME}.zip
+
+    if [[ -d ${BACKUP_TMP_DIR} ]];
+    then
+        ${SHELL_RM} -rf ${BACKUP_TMP_DIR}
+    fi
+
+    echo_blue "正在备份数据。"
+    ${SHELL_CP} -r ${PATH_DATA_ROOT} ${BACKUP_TMP_DIR}
+    cd ${BACKUP_TMP_DIR}
+    ${SHELL_ZIP} -r -v -9 -T ${BACKUP_ZIPFILE} data conf > ${PATH_DATA_ROOT}/logs/backup.${BACKUP_NAME}.log
+    cd ${PWD_CURRENT}
+    ${SHELL_RM} -rf ${BACKUP_TMP_DIR}
+    
+    echo_yellow "备份数据到 ${BACKUP_ZIPFILE}。"
+}
+
 # 卸载服务。
 function uninstall_service() {
     echo_green "查看服务状态并关闭服务："
@@ -103,25 +127,18 @@ function uninstall_service() {
     ${SHELL_SYSTEMCTL} disable mongod.${PORT}
     ${SHELL_RM} -rf ${PATH_SERVICE}
 
-    # 备份实例数据。
-    PWD_CURRENT=`${SHELL_PWD}`
-    TMP_NAME=mongodb.${PORT}.`${SHELL_DATE} +%y%m%d%H%M`
-    TMP_DIR=/tmp/${TMP_NAME}
-    TMP_ZIPFILE=/tmp/${TMP_NAME}.zip
-
-    if [[ -d ${TMP_DIR} ]];
-    then
-        ${SHELL_RM} -rf ${TMP_DIR}
-    fi
-    ${SHELL_CP} -r ${PATH_DATA_ROOT} ${TMP_DIR}
-    cd ${TMP_DIR}
-    ${SHELL_ZIP} -r -v -9 -T ${TMP_ZIPFILE} data conf
-    cd ${PWD_CURRENT}
-
-    echo_yellow "备份数据到 ${TMP_ZIPFILE}。"
-
     echo_green "删除实例文件夹："
     ${SHELL_RM} -rf ${PATH_DATA_ROOT}
+}
+
+# 停止服务。
+function stop_service() {
+    PID_FILE=${PATH_DATA_ROOT}/tmp/mongodb.${PORT}.pid
+    PID=`${SHELL_CAT} ${PID_FILE}`
+    ${SHELL_KILL} ${PID}
+
+    # 备份实例数据。
+    backup
 }
 
 function help() {
@@ -145,5 +162,6 @@ function help() {
 case $1 in
     "install") install_service ;;
     "uninstall") uninstall_service ;;
+    "stop") stop_service ;;
     *) help ;;
 esac
