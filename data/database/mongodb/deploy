@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. ../shell/functions
+. /data/shell/functions
 
 # 实例的端口号。
 PORT=$2
@@ -45,7 +45,8 @@ then
     TEMPLATE_SERVICE=${PATH_SHELL_FOLDER}/mongos.service.sample
 fi
 
-install_service() {
+# 安装服务。
+function install_service() {
 if [ ! -d ${PATH_DATA_ROOT} ];
 then
     echo_green "创建实例文件夹："
@@ -85,7 +86,8 @@ else
 fi
 }
 
-uninstall_service() {
+# 卸载服务。
+function uninstall_service() {
     echo_green "查看服务状态并关闭服务："
     ${SHELL_SYSTEMCTL} daemon-reload
     ${SHELL_SERVICE} mongod.${PORT} status
@@ -99,7 +101,26 @@ uninstall_service() {
     ${SHELL_RM} -rf ${PATH_DATA_ROOT}
 }
 
+function help() {
+    echo_green "安装单实例："
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install {端口号} single"
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install 2741 single"
+    echo_yellow "安装配置集群（不包含配置）："
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install {端口号} config {集群名称}"
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install 2701 config configs"
+    echo_yellow "安装数据集群（不包含配置）："
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install {端口号} shard {集群名称}"
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install 2711 shard shard1"
+    echo_yellow "安装路由（不包含配置）："
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install {端口号} mongos"
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install 2700 mongos"
+    echo_red "卸载实例（包含删除数据）："
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy uninstall {端口号}"
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy uninstall 2742"
+}
+
 case $1 in
     "install") install_service ;;
     "uninstall") uninstall_service ;;
+    *) help ;;
 esac

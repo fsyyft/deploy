@@ -10,11 +10,30 @@ ROOT_PATH_MONGODB=/data/database/mongodb
 PATH_SHELL_FOLDER=$(cd `dirname $0`;/usr/bin/pwd)
 
 # 复制常用函数文件。
-if [ ! -d ${ROOT_PATH_SHELL} ];
-then
-    ${SHELL_MKDIR} -p ${ROOT_PATH_SHELL}
-fi
-${SHELL_CP} ${PATH_SHELL_FOLDER}/functions ${ROOT_PATH_SHELL}
+function copy_function() {
+    # 如果目录不存在，则创建目录。
+    if [ ! -d ${ROOT_PATH_SHELL} ];
+    then
+        ${SHELL_MKDIR} -p ${ROOT_PATH_SHELL}
+    fi
+
+    # 如果文件已经存在，则删除文件。
+    PATH_FUNCTION=${ROOT_PATH_SHELL}/functions
+    if [ -f ${PATH_FUNCTION} ];
+    then
+        ${SHELL_RM} -rf ${PATH_FUNCTION}
+    fi
+
+    # 拷贝文件，移除写和执行权限。
+    ${SHELL_CP} ${PATH_SHELL_FOLDER}/functions ${ROOT_PATH_SHELL}
+    ${SHELL_CHMOD} a-w ${PATH_FUNCTION}
+    ${SHELL_CHMOD} a-x ${PATH_FUNCTION}
+    ${SHELL_TREE} -ugD -L 1 ${ROOT_PATH_SHELL}
+    
+    echo_green "常用函数文件复制完成。"
+}
+
+copy_function
 
 # 使用 yum 安装 MongoDB。
 function yum_install_mongodb() {
