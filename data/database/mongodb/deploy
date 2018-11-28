@@ -10,6 +10,7 @@ ROLE=$3
 
 # 实例的集群名称。
 REPLSETNAME=$4
+CONFIGDB=$4
 
 # 脚本所在目录。
 # 这里要注意下，如果写 /usr/bin/cd 会有问题。
@@ -58,7 +59,6 @@ then
     echo_green "创建实例配置文件："
     ${SHELL_CP} ${TEMPLATE_CONF} ${PATH_CONF}
     ${SHELL_SED} -i "s/\${PORT}/${PORT}/g" ${PATH_CONF}
-    ${SHELL_SED} -i "s/\${REPLSETNAME}/${REPLSETNAME}/g" ${PATH_CONF}
 
     echo_green "创建服务配置文件："
     ${SHELL_CP} ${TEMPLATE_SERVICE} ${PATH_SERVICE}
@@ -66,10 +66,16 @@ then
 
     if [[ "config" == ${ROLE} ]];
     then
+        ${SHELL_SED} -i "s/\${REPLSETNAME}/${REPLSETNAME}/g" ${PATH_CONF}
         ${SHELL_SED} -i "s/\${CLUSTERROLE}/configsvr/g" ${PATH_CONF}
     elif [[ "shard" == ${ROLE} ]];
     then
+        ${SHELL_SED} -i "s/\${REPLSETNAME}/${REPLSETNAME}/g" ${PATH_CONF}
         ${SHELL_SED} -i "s/\${CLUSTERROLE}/shardsvr/g" ${PATH_CONF}
+    elif [[ "mongos" == ${ROLE} ]];
+    then
+        CONFIGDB_TMP=`${SHELL_ECHO} ${CONFIGDB} | ${SHELL_SED} 's#\/#\\\/#g'`
+        ${SHELL_SED} -i "s/\${CONFIGDB}/${CONFIGDB_TMP}/g" ${PATH_CONF}
     fi
 
     ${SHELL_CHOWN} mongod.mongod -R ${PATH_DATA_ROOT}
@@ -112,8 +118,8 @@ function help() {
     ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install {端口号} shard {集群名称}"
     ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install 2711 shard shard1"
     echo_yellow "安装路由（不包含配置）："
-    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install {端口号} mongos"
-    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install 2700 mongos"
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install {端口号} mongos {配置集群信息}"
+    ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy install 2700 mongos configs/127.0.0.1:2701,127.0.0.1:2702,127.0.0.1:2703"
     echo_red "卸载实例（包含删除数据）："
     ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy uninstall {端口号}"
     ${SHELL_ECHO} "    ${PATH_SHELL_FOLDER}/deploy uninstall 2742"

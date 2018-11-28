@@ -59,6 +59,8 @@ function yum_install_mongodb() {
     ${SHELL_CP} ${PATH_SHELL_FOLDER}/../database/mongodb/mongod.conf.sample ${ROOT_PATH_MONGODB} 
     ${SHELL_CP} ${PATH_SHELL_FOLDER}/../database/mongodb/mongod.conf.single ${ROOT_PATH_MONGODB} 
     ${SHELL_CP} ${PATH_SHELL_FOLDER}/../database/mongodb/mongod.service.sample ${ROOT_PATH_MONGODB} 
+    ${SHELL_CP} ${PATH_SHELL_FOLDER}/../database/mongodb/mongos.conf.sample ${ROOT_PATH_MONGODB} 
+    ${SHELL_CP} ${PATH_SHELL_FOLDER}/../database/mongodb/mongos.service.sample ${ROOT_PATH_MONGODB} 
 
     if [ ! -f ${ROOT_PATH_MONGODB}/keyfile.dat ];
     then
@@ -69,9 +71,11 @@ function yum_install_mongodb() {
     ${SHELL_CHOWN} mongod.mongod -R ${ROOT_PATH_MONGODB}
     ${SHELL_CHMOD} a+x ${ROOT_PATH_MONGODB}/deploy 
     ${SHELL_CHMOD} 600 ${ROOT_PATH_MONGODB}/keyfile.dat
-    ${SHELL_CHMOD} a-w ${ROOT_PATH_MONGODB}/mongod.conf.sample
-    ${SHELL_CHMOD} a-w ${ROOT_PATH_MONGODB}/mongod.conf.single
-    ${SHELL_CHMOD} a-w ${ROOT_PATH_MONGODB}/mongod.service.sample
+    ${SHELL_CHMOD} 400 ${ROOT_PATH_MONGODB}/mongod.conf.sample
+    ${SHELL_CHMOD} 400 ${ROOT_PATH_MONGODB}/mongod.conf.single
+    ${SHELL_CHMOD} 400 ${ROOT_PATH_MONGODB}/mongod.service.sample
+    ${SHELL_CHMOD} 400 ${ROOT_PATH_MONGODB}/mongos.conf.sample
+    ${SHELL_CHMOD} 400 ${ROOT_PATH_MONGODB}/mongos.service.sample
 
     # 移除默认服务。
     ${SHELL_SYSTEMCTL} disable mongod
