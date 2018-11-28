@@ -125,3 +125,161 @@ bye
 ```bash
 [fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2741
 ```
+
+##### 配置一个集群
+
+###### 安装分片
+
+使用脚本进行安装。
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2711 shard shard1
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2712 shard shard1
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2713 shard shard1
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2721 shard shard2
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2722 shard shard2
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2723 shard shard2
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2731 shard shard3
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2732 shard shard3
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2733 shard shard3
+```
+
+配置分片集群。
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2711
+> config = { _id: "shard1", members: [ { _id: 11, host: "127.0.0.1:2711" }, { _id: 12, host: "127.0.0.1:2712" }, { _id: 13, host: "127.0.0.1:2713" } ] };
+> rs.initiate(config);
+{ "ok" : 1 }
+shard1:PRIMARY> db.createUser({ user: "mongo", pwd: "mongo", roles: [ "root" ] });
+Successfully added user: { "user" : "mongo", "roles" : [ "root" ] }
+shard1:PRIMARY> db.auth("mongo", "mongo");
+1
+```
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2721
+> config = { _id: "shard3", members: [ { _id: 31, host: "127.0.0.1:2731" }, { _id: 32, host: "127.0.0.1:2732" }, { _id: 33, host: "127.0.0.1:2733" } ] };
+> rs.initiate(config);
+{ "ok" : 1 }
+shard2:PRIMARY> db.createUser({ user: "mongo", pwd: "mongo", roles: [ "root" ] });
+Successfully added user: { "user" : "mongo", "roles" : [ "root" ] }
+shard2:PRIMARY> db.auth("mongo", "mongo");
+1
+```
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2711
+> config = { _id: "shard1", members: [ { _id: 11, host: "127.0.0.1:2711" }, { _id: 12, host: "127.0.0.1:2712" }, { _id: 13, host: "127.0.0.1:2713" } ] };
+> rs.initiate(config);
+{ "ok" : 1 }
+shard3:PRIMARY> db.createUser({ user: "mongo", pwd: "mongo", roles: [ "root" ] });
+Successfully added user: { "user" : "mongo", "roles" : [ "root" ] }
+shard3:PRIMARY> db.auth("mongo", "mongo");
+1
+```
+
+配置完成后可通过 `rs.status();` 指令查看状态。
+
+###### 安装配置
+
+使用脚本进行安装。
+
+```bash
+[fsyyft@kvm-centos7-mongodb tmp]# cd /data/database/mongodb/
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy install 2701 config configs
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy install 2702 config configs
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy install 2703 config configs
+```
+
+配置集群。
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2701
+> config = { _id: "configs", members: [ { _id: 1, host: "127.0.0.1:2701" }, { _id: 2, host: "127.0.0.1:2702" }, { _id: 3, host: "127.0.0.1:2703" } ] };
+> rs.initiate(config);
+```
+
+配置完成后可通过 `rs.status();` 指令查看状态。
+
+###### 安装路由
+
+使用脚本进行安装。
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /data/database/mongodb/deploy install 2700 mongos configs/127.0.0.1:2701,127.0.0.1:2702,127.0.0.1:2703
+```
+
+添加用户。
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2700
+mongos> use admin;
+switched to db admin
+mongos> db.createUser({ user: "mongo", pwd: "mongo", roles: [ "root" ] });
+Successfully added user: { "user" : "mongo", "roles" : [ "root" ] }
+mongos> db.auth("mongo", "mongo");
+1
+mongos> sh.addShard("shard1/127.0.0.1:2711,127.0.0.1:2712,127.0.0.1:2713");
+mongos> sh.addShard("shard2/127.0.0.1:2721,127.0.0.1:2722,127.0.0.1:2723");
+mongos> sh.addShard("shard3/127.0.0.1:2731,127.0.0.1:2732,127.0.0.1:2733");
+```
+
+配置完成后可通过 `sh.status();` 指令查看状态。
+
+###### 测试
+
+创建一个 `hello` 库，并开启分片；设置 `hello.world` 这个集合使用 `id` 分片。
+
+为了容易看效果，把 `chunksize` 设置为 `1`。
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2700
+mongos> use admin;
+switched to db admin
+mongos> db.auth("mongo", "mongo");
+1
+mongos> use config;
+switched to db config
+mongos> db.settings.save({ _id:"chunksize", value: 1 });
+WriteResult({ "nMatched" : 0, "nUpserted" : 1, "nModified" : 0, "_id" : "chunksize" })
+mongos> use admin;
+switched to db admin
+mongos> db.runCommand({ enablesharding :"hello"});
+mongos> db.runCommand({ shardcollection : "hello.world",key : {id: 1} });
+```
+
+写入测试数据。
+
+```bash
+[fsyyft@kvm-centos7-mongodb mongodb]# /usr/bin/mongo --port 2700
+mongos> use admin;
+switched to db admin
+mongos> db.auth("mongo", "mongo");
+1
+mongos> use hello;
+switched to db hello
+mongos> for (var idx = 1; idx <= 65535; idx++) db.world.save({"id": idx, "hello": "world"});
+WriteResult({ "nInserted" : 1 })
+```
+
+写入数据完成后，可以在 `hello` 库中通过 `db.world.stats();` 查看分片情况。
+
+###### 清除测试环境
+
+```bash
+[fsyyft@kvm-centos7-mongodb tmp]# cd /data/database/mongodb/
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2700
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2701
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2702
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2703
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2711
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2722
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2733
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2721
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2722
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2723
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2731
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2732
+[fsyyft@kvm-centos7-mongodb mongodb]# ./deploy uninstall 2733
+```
