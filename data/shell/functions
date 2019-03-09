@@ -9,6 +9,7 @@ SHELL_DOCKER=/usr/bin/docker
 SHELL_ECHO=/usr/bin/echo
 SHELL_GREP=/usr/bin/grep
 SHELL_KILL=/usr/bin/kill
+SHELL_LS=/usr/bin/ls
 SHELL_MKDIR=/usr/bin/mkdir
 SHELL_MV=/usr/bin/mv
 SHELL_OPENSSL=/usr/bin/openssl

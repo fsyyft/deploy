@@ -1,0 +1,72 @@
+#!/bin/bash
+
+. ../../shell/functions
+
+# 脚本所在目录。
+# 这里要注意下，如果写 /usr/bin/cd 会有问题。
+PATH_SHELL_FOLDER=$(cd `${SHELL_DIRNAME} $0`;${SHELL_PWD})
+
+PATH_ROOT=${PATH_SHELL_FOLDER}/../
+
+cd ${PATH_ROOT}
+echo_blue 进入工作目录：$(${SHELL_PWD})
+
+function server() {
+    SERVER_NAME=$1
+    SERVER_ID=00
+    SERVER_IP="172.27.XXX.0"
+
+    case ${SERVER_NAME} in
+        "qd")
+            SERVER_ID=35
+            SERVER_IP="172.27.53.1"
+            ;;
+        "pi")
+            SERVER_ID=0A
+            SERVER_IP="172.27.16.1"
+            ;;
+    esac
+
+
+    echo_yellow "OpenVPN 服务端 ID：${SERVER_ID}"
+    echo_yellow "OpenVPN 服务端 IP：${SERVER_IP}"
+
+    echo_yellow "开始生成请求证书。"
+    ./bin/ca.ppno.net req_vpn_openvpn_server ${SERVER_NAME} ${SERVER_ID} ${SERVER_IP}
+    echo_yellow "完成生成请求证书。"
+    echo_yellow "开始请求证书签名。"
+    ./bin/ca.ppno.net sign_vpn_openvpn_server ${SERVER_NAME} ${SERVER_ID} ${SERVER_IP}
+    echo_yellow "完成请求证书签名。"
+    
+    ${SHELL_LS} -la certs/openvpn | ${SHELL_GREP} ${SERVER_NAME}
+}
+
+function client() {
+    CLIENT_NAME=$1
+    CLIENT_ID=00
+    CLIENT_IP="172.27.XXX.0"
+
+    case ${CLIENT_NAME} in
+        "dev.work")
+            CLIENT_ID=3A
+            CLIENT_IP="172.27.XXX.58"
+            ;;
+    esac
+
+    echo_yellow "OpenVPN 客户端 ID：${CLIENT_ID}"
+    echo_yellow "OpenVPN 客户端 IP：${CLIENT_IP}"
+
+    echo_yellow "开始生成请求证书。"
+    ./bin/ca.ppno.net req_vpn_openvpn_client ${CLIENT_NAME} ${CLIENT_ID} ${CLIENT_IP}
+    echo_yellow "完成生成请求证书。"
+    echo_yellow "开始请求证书签名。"
+    ./bin/ca.ppno.net sign_vpn_openvpn_client ${CLIENT_NAME} ${CLIENT_ID} ${CLIENT_IP}
+    echo_yellow "完成请求证书签名。"
+    
+    ${SHELL_LS} -la certs/openvpn | ${SHELL_GREP} ${CLIENT_NAME}
+}
+
+case $1 in
+    "server") server $2;;
+    "client") client $2;;
+esac

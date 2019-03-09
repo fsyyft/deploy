@@ -9,10 +9,16 @@ PATH_SHELL_FOLDER=$(cd `${SHELL_DIRNAME} $0`;${SHELL_PWD})
 PATH_ROOT=${PATH_SHELL_FOLDER}/../
 PATH_CONFIG=${PATH_ROOT}/conf/ca.ppno.net.conf
 
+# 根证书的有效期开始时间。
 CONF_STARTDATE_ROOT=151029151029Z
+# 根证书的有效期结束时间。
 CONF_ENDDATE_ROOT=331029151029Z
+# 证书的有效期开始时间。
 CONF_STARTDATE=181029151029Z
+# 证书的有效期结束时间。
 CONF_ENDDATE=211029151029Z
+# 域名。
+CONF_DOMAIN=ppno.net
 
 # 是否调试阶段。
 CONF_DEBUG=1
@@ -26,8 +32,15 @@ function unzip_key() {
     KEY=$1
     ZIP_FILE=private/${KEY}.zip
 
-    ${SHELL_UNZIP} ${ZIP_FILE}
-    ${SHELL_MV} ${KEY} private/
+    if [ -f ${ZIP_FILE} ]; then
+        # 解压文件。
+        ${SHELL_UNZIP} ${ZIP_FILE}
+        # 移动文件到 private 目录。
+        ${SHELL_MV} ${KEY} private/
+    else
+        echo_red "文件 ${ZIP_FILE} 不存在。"
+        exit
+    fi
 }
 
 # 删除数据库中的指定的序列号；仅当 CONF_DEBUG 设置为 1 是有效。
@@ -259,7 +272,9 @@ function sign_ca_vpn_openvpn () {
 function req_vpn_openvpn_server () {
     SERVER_NAME=$1
     SERVER_ID=$2
-    SERVER_DOMAIN_BASE=server.openvpn.ppno.net
+    SERVER_IP=$3
+
+    SERVER_DOMAIN_BASE=server.openvpn.${CONF_DOMAIN}
     SERVER_DOMAIN=${SERVER_NAME}.${SERVER_DOMAIN_BASE}
 
     # 服务端只用一个密钥对。
@@ -277,6 +292,7 @@ function req_vpn_openvpn_server () {
     export SUBJ_OU_1=${SERVER_DOMAIN}
     export SUBJ_CN=${SERVER_DOMAIN}
     export SUBJ_OPENVPN_SERVER_NAME=${SERVER_NAME}
+    export SUBJ_OPENVPN_IP=${SERVER_IP}
 
     echo_blue 请求开始。
     ${SHELL_OPENSSL} req                                \
@@ -291,6 +307,7 @@ function req_vpn_openvpn_server () {
     unset SUBJ_OU_1
     unset SUBJ_CN
     unset SUBJ_OPENVPN_SERVER_NAME
+    unset SUBJ_OPENVPN_IP
 
     ${SHELL_RM} -rf private/${FILE_KEY}
 
@@ -305,11 +322,13 @@ function req_vpn_openvpn_server () {
 function sign_vpn_openvpn_server () {
     SERVER_NAME=$1
     SERVER_ID=$2
-    SERVER_DOMAIN_BASE=server.openvpn.ppno.net
+    SERVER_IP=$3
+
+    SERVER_DOMAIN_BASE=server.openvpn.${CONF_DOMAIN}
     SERVER_DOMAIN=${SERVER_NAME}.${SERVER_DOMAIN_BASE}
 
-    FILE_KEY_CA=ca.openvpn.vpn.ppno.net.key
-    FILE_CRT_CA=ca.openvpn.vpn.ppno.net.crt
+    FILE_KEY_CA=ca.openvpn.vpn.${CONF_DOMAIN}.key
+    FILE_CRT_CA=ca.openvpn.vpn.${CONF_DOMAIN}.crt
     FILE_CSR=${SERVER_DOMAIN}.csr
     FILE_CRT=${SERVER_DOMAIN}.crt
     CONF_EXTENSIONS=v3_vpn_openvpn_server
@@ -329,6 +348,7 @@ function sign_vpn_openvpn_server () {
     export SUBJ_OU_1=${SERVER_DOMAIN}
     export SUBJ_CN=${SERVER_DOMAIN}
     export SUBJ_OPENVPN_SERVER_NAME=${SERVER_NAME}
+    export SUBJ_OPENVPN_IP=${SERVER_IP}
 
     ${SHELL_OPENSSL} ca                                 \
                     -config ${PATH_CONFIG}              \
@@ -345,19 +365,23 @@ function sign_vpn_openvpn_server () {
     unset SUBJ_OU_1
     unset SUBJ_CN
     unset SUBJ_OPENVPN_SERVER_NAME
+    unset SUBJ_OPENVPN_IP
 
     ${SHELL_RM} -rf private/${FILE_KEY_CA}
 
     echo_blue 签名完成。
 }
 
+########## ########## ########## ########## ##########
+# 生成 OpenVPN 客户端证书请求文件。
 function req_vpn_openvpn_client () {
     CLIENT_NAME=$1
     CLIENT_ID=$2
-    CLIENT_DOMAIN_BASE=openvpn.ppno.net
+    CLIENT_IP=$3
+
+    CLIENT_DOMAIN_BASE=openvpn.${CONF_DOMAIN}
     CLIENT_DOMAIN=${CLIENT_NAME}.${CLIENT_DOMAIN_BASE}
 
-    # 服务端只用一个密钥对。
     FILE_KEY=${CLIENT_DOMAIN}.key
     FILE_CSR=${CLIENT_DOMAIN}.csr
     CONF_EXTENSIONS=v3_vpn_openvpn_client
@@ -372,6 +396,7 @@ function req_vpn_openvpn_client () {
     export SUBJ_OU_1=${CLIENT_DOMAIN}
     export SUBJ_CN=${CLIENT_DOMAIN}
     export SUBJ_OPENVPN_CLIENT_NAME=${CLIENT_NAME}
+    export SUBJ_OPENVPN_IP=${CLIENT_IP}
 
     echo_blue 请求开始。
     ${SHELL_OPENSSL} req                                \
@@ -386,6 +411,7 @@ function req_vpn_openvpn_client () {
     unset SUBJ_OU_1
     unset SUBJ_CN
     unset SUBJ_OPENVPN_CLIENT_NAME
+    unset SUBJ_OPRNVPN_IP
 
     ${SHELL_RM} -rf private/${FILE_KEY}
 
@@ -397,14 +423,18 @@ function req_vpn_openvpn_client () {
                     -in certs/openvpn/${FILE_CSR}
 }
 
+########## ########## ########## ########## ##########
+# 签名 OpenVPN 客户端证书。
 function sign_vpn_openvpn_client () {
     CLIENT_NAME=$1
     CLIENT_ID=$2
-    CLIENT_DOMAIN_BASE=openvpn.ppno.net
+    CLIENT_IP=$3
+
+    CLIENT_DOMAIN_BASE=openvpn.${CONF_DOMAIN}
     CLIENT_DOMAIN=${CLIENT_NAME}.${CLIENT_DOMAIN_BASE}
 
-    FILE_KEY_CA=ca.openvpn.vpn.ppno.net.key
-    FILE_CRT_CA=ca.openvpn.vpn.ppno.net.crt
+    FILE_KEY_CA=ca.openvpn.vpn.${CONF_DOMAIN}.key
+    FILE_CRT_CA=ca.openvpn.vpn.${CONF_DOMAIN}.crt
     FILE_CSR=${CLIENT_DOMAIN}.csr
     FILE_CRT=${CLIENT_DOMAIN}.crt
     CONF_EXTENSIONS=v3_vpn_openvpn_client
@@ -424,6 +454,7 @@ function sign_vpn_openvpn_client () {
     export SUBJ_OU_1=${CLIENT_DOMAIN}
     export SUBJ_CN=${CLIENT_DOMAIN}
     export SUBJ_OPENVPN_CLIENT_NAME=${CLIENT_NAME}
+    export SUBJ_OPENVPN_IP=${CLIENT_IP}
 
     ${SHELL_OPENSSL} ca                                 \
                     -config ${PATH_CONFIG}              \
@@ -440,6 +471,7 @@ function sign_vpn_openvpn_client () {
     unset SUBJ_OU_1
     unset SUBJ_CN
     unset SUBJ_OPENVPN_CLIENT_NAME
+    unset SUBJ_OPRNVPN_IP
 
     ${SHELL_RM} -rf private/${FILE_KEY_CA}
 
@@ -453,8 +485,8 @@ case $1 in
     "sign_ca_vpn") sign_ca_vpn;;
     "req_ca_vpn_openvpn") req_ca_vpn_openvpn;;
     "sign_ca_vpn_openvpn") sign_ca_vpn_openvpn;;
-    "req_vpn_openvpn_server") req_vpn_openvpn_server $2 $3;;
-    "sign_vpn_openvpn_server") sign_vpn_openvpn_server $2 $3;;
-    "req_vpn_openvpn_client") req_vpn_openvpn_client $2 $3;;
-    "sign_vpn_openvpn_client") sign_vpn_openvpn_client $2 $3;;
+    "req_vpn_openvpn_server") req_vpn_openvpn_server $2 $3 $4;;
+    "sign_vpn_openvpn_server") sign_vpn_openvpn_server $2 $3 $4;;
+    "req_vpn_openvpn_client") req_vpn_openvpn_client $2 $3 $4;;
+    "sign_vpn_openvpn_client") sign_vpn_openvpn_client $2 $3 $4;;
 esac
