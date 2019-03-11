@@ -19,12 +19,39 @@ CONF_STARTDATE=181029151029Z
 CONF_ENDDATE=211029151029Z
 # 域名。
 CONF_DOMAIN=ppno.net
+CONF_SERIAL=E3E3E3
+
+CONF_KEY_CA=ca.${CONF_DOMAIN}.key
+CONF_CSR_CA=ca.${CONF_DOMAIN}.csr
+CONF_CRT_CA=ca.${CONF_DOMAIN}.crt
+CONF_SER_CA=${CONF_SERIAL}0100E3
+
+CONF_KEY_CA_TEST=ca.test.${CONF_DOMAIN}.key
+CONF_CSR_CA_TEST=ca.test.${CONF_DOMAIN}.csr
+CONF_CRT_CA_TEST=ca.test.${CONF_DOMAIN}.crt
+CONF_SER_CA_TEST=${CONF_SERIAL}020401
+
+CONF_KEY_CA_INTERNET=ca.internet.${CONF_DOMAIN}.key
+CONF_CSR_CA_INTERNET=ca.internet.${CONF_DOMAIN}.csr
+CONF_CRT_CA_INTERNET=ca.internet.${CONF_DOMAIN}.crt
+CONF_SER_CA_INTERNET=${CONF_SERIAL}020201
+
+CONF_KEY_CA_VPN=ca.vpn.${CONF_DOMAIN}.key
+CONF_CSR_CA_VPN=ca.vpn.${CONF_DOMAIN}.csr
+CONF_CRT_CA_VPN=ca.vpn.${CONF_DOMAIN}.crt
+CONF_SER_CA_VPN=${CONF_SERIAL}020101
+
+CONF_KEY_CA_VPN_OPENVPN=ca.openvpn.vpn.${CONF_DOMAIN}.key
+CONF_CSR_CA_VPN_OPENVPN=ca.openvpn.vpn.${CONF_DOMAIN}.csr
+CONF_CRT_CA_VPN_OPENVPN=ca.openvpn.vpn.${CONF_DOMAIN}.crt
+CONF_SER_CA_VPN_OPENVPN=${CONF_SERIAL}03010101
 
 # 是否调试阶段。
+# 调试阶段同序列号证书签发时，会先删除原证书。
 CONF_DEBUG=1
 
 cd ${PATH_ROOT}
-echo_blue 进入工作目录：$(${SHELL_PWD})
+echo_blue "进入工作目录：$(${SHELL_PWD})"
 
 # 解压密钥，解压后的密钥放在 private 文件夹。
 # 参数1：密钥的名称，不包含扩展名 .zip。
@@ -57,216 +84,378 @@ function del_exists_serial() {
     fi
 }
 
+########## ########## ########## ########## ##########
+# 生成密钥。并将密钥加密压缩后存储到 private 目录。
+# 参数1：密钥名称。
+# 参数2：密钥长度。
+# 参数3：密钥的密码。
+# 参数4：密钥压缩包的密码。
+function genkey() {
+    KEY_NAME=$1
+    KEY_SIZE=$2
+    KEY_PASS=$3
+    ZIP_PASS=$4
+
+    if [ -f private/${KEY_NAME}.key.zip ]; then
+        echo_yellow "密钥 ${KEY_NAME}.key 已经存在。"
+    else
+        ${SHELL_OPENSSL} genrsa -des3 -passout pass:${KEY_PASS} -out ${KEY_NAME}.key ${KEY_SIZE}
+        ${SHELL_ZIP} -P ${ZIP_PASS} -9 ${KEY_NAME}.key.zip ${KEY_NAME}.key
+    
+        ${SHELL_MV} ${KEY_NAME}.key.zip private/
+        ${SHELL_RM} -rf ${KEY_NAME}.key
+
+        if [ -f private/${KEY_NAME}.key.zip ]; then
+            echo_blue "密钥生成成功。"
+            ${SHELL_CHMOD} 644 private/${KEY_NAME}.key.zip
+            ${SHELL_LS} -aihl --color=tty --time-style=long-iso private/${KEY_NAME}.key.zip
+            echo_yellow "强烈建议使用 history -c 清理命令历史记录，避免密钥相关密码外泄。"
+        else
+            echo_yellow "密钥生成失败。"
+        fi
+    fi
+
+    # 清理当前命令的历史记录。
+    history -c
+}
+
+########## ########## ########## ########## ##########
+# 生成根证书请求文件。
 function req_ca () {
-    FILE_KEY=ca.ppno.net.key
-    FILE_CSR=ca.ppno.net.csr
     CONF_EXTENSIONS=v3_ca_root
-    CONF_SERIAL=E3E3E30100E3
 
-    rm_file private/${FILE_KEY}
-    rm_file certs/${FILE_CSR}
+    # 删除私钥。
+    rm_file private/${CONF_KEY_CA}
+    # 删除已生成的请求文件。
+    rm_file certs/${CONF_CSR_CA}
 
-    unzip_key ${FILE_KEY}
+    unzip_key ${CONF_KEY_CA}
+
+    if [ ! -f private/${CONF_KEY_CA} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
 
     export SUBJ_OU_0="GlobalDevSign Root CA"
     export SUBJ_OU_1="ca.ppno.net"
     export SUBJ_CN="GlobalDevSign Root CA"
 
-    echo_blue 请求开始。
-    ${SHELL_OPENSSL} req                                \
-                    -new                                \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -set_serial 0x${CONF_SERIAL}        \
-                    -key private/${FILE_KEY}            \
-                    -out certs/${FILE_CSR}
+    echo_blue "请求开始。"
+    ${SHELL_OPENSSL} req                                        \
+                    -new                                        \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -set_serial 0x${CONF_SER_CA}                \
+                    -key private/${CONF_KEY_CA}                 \
+                    -out certs/${CONF_CSR_CA}
    
     unset SUBJ_OU_0
     unset SUBJ_OU_1
     unset SUBJ_CN
 
-    ${SHELL_RM} -rf private/${FILE_KEY}
+    ${SHELL_RM} -rf private/${CONF_KEY_CA}
 
-    echo_blue 请求完成：
-
-    ${SHELL_OPENSSL} req                                \
-                    -noout                              \
-                    -text                               \
-                    -in certs/${FILE_CSR}
+    if [ -f certs/${CONF_CSR_CA} ]; then
+        echo_blue "请求完成："
+        ${SHELL_OPENSSL} req                                    \
+                    -noout                                      \
+                    -text                                       \
+                    -in certs/${CONF_CSR_CA}
+    else
+        echo_yellow "生成请求文件失败。"
+    fi
 }
 
+########## ########## ########## ########## ##########
+# 自签名根证书。
 function selfsign_ca () {
-    FILE_KEY=ca.ppno.net.key
-    FILE_CSR=ca.ppno.net.csr
-    FILE_CRT=ca.ppno.net.crt
     CONF_EXTENSIONS=v3_ca_root
-    CONF_SERIAL=E3E3E30100E3
 
-    rm_file private/${FILE_KEY}
+    # 删除私钥。
+    rm_file private/${CONF_KEY_CA}
 
-    unzip_key ${FILE_KEY}
+    unzip_key ${CONF_KEY_CA}
+
+    if [ ! -f private/${CONF_KEY_CA} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
 
     # 设置当前使用的序列号。
-    ${SHELL_ECHO} ${CONF_SERIAL} > serial
+    ${SHELL_ECHO} ${CONF_SER_CA} > serial
 
     # 删除数据库中的当前使用的序列号。
-    del_exists_serial ${CONF_SERIAL}
+    del_exists_serial ${CONF_SER_CA}
 
-    ${SHELL_OPENSSL} ca                                 \
-                    -selfsign                           \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -startdate ${CONF_STARTDATE_ROOT}   \
-                    -enddate ${CONF_ENDDATE_ROOT}       \
-                    -keyfile private/${FILE_KEY}        \
-                    -in certs/${FILE_CSR}               \
-                    -out certs/${FILE_CRT}
+    ${SHELL_OPENSSL} ca                                         \
+                    -selfsign                                   \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -startdate ${CONF_STARTDATE_ROOT}           \
+                    -enddate ${CONF_ENDDATE_ROOT}               \
+                    -keyfile private/${CONF_KEY_CA}             \
+                    -in certs/${CONF_CSR_CA}                    \
+                    -out certs/${CONF_CRT_CA}
 
-    ${SHELL_RM} -rf private/${FILE_KEY}
+    ${SHELL_RM} -rf private/${CONF_KEY_CA}
 
-    echo_blue 签名完成。
+    if [ -f certs/${CONF_CRT_CA} ]; then
+        echo_blue "签名完成。"
+    else
+        echo_yellow "签名失败。"
+    fi
 }
 
+########## ########## ########## ########## ##########
+# 生成 Internet 颁发机构证书请求文件。
+function req_ca_internet () {
+    CONF_EXTENSIONS=v3_ca_internet
+
+    rm_file private/${CONF_KEY_CA_INTERNET}
+    rm_file certs/${CONF_CSR_CA_INTERNET}
+
+    unzip_key ${CONF_KEY_CA_INTERNET}
+
+    if [ ! -f private/${CONF_KEY_CA_INTERNET} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
+    
+    export SUBJ_OU_0="GlobalDevSign Internet Authority"
+    export SUBJ_OU_1="ca.internet.ppno.net"
+    export SUBJ_CN="GlobalDevSign Internet Authority"
+
+    echo_blue "请求开始。"
+    ${SHELL_OPENSSL} req                                        \
+                    -new                                        \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -set_serial 0x${CONF_SER_CA_INTERNET}       \
+                    -key private/${CONF_KEY_CA_INTERNET}        \
+                    -out certs/${CONF_CSR_CA_INTERNET}
+   
+    unset SUBJ_OU_0
+    unset SUBJ_OU_1
+    unset SUBJ_CN
+
+    ${SHELL_RM} -rf private/${CONF_KEY_CA_INTERNET}
+
+    if [ -f certs/${CONF_CSR_CA_INTERNET} ]; then
+        echo_blue "请求完成："
+        ${SHELL_OPENSSL} req                                    \
+                    -noout                                      \
+                    -text                                       \
+                    -in certs/${CONF_CSR_CA_INTERNET}
+    else
+        echo_yellow "生成请求文件失败。"
+    fi
+}
+
+########## ########## ########## ########## ##########
+# 签名 Internet 颁发机构证书。
+function sign_ca_internet () {
+    CONF_EXTENSIONS=v3_ca_internet
+
+    rm_file private/${CONF_KEY_CA}
+
+    unzip_key ${CONF_KEY_CA}
+
+    if [ ! -f private/${CONF_KEY_CA} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
+
+    # 设置当前使用的序列号。
+    ${SHELL_ECHO} ${CONF_SER_CA_INTERNET} > serial
+
+    # 删除数据库中的当前使用的序列号。
+    del_exists_serial ${CONF_SER_CA_INTERNET}
+
+    ${SHELL_OPENSSL} ca                                         \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -startdate ${CONF_STARTDATE}                \
+                    -enddate ${CONF_ENDDATE}                    \
+                    -keyfile private/${CONF_KEY_CA}             \
+                    -cert certs/${CONF_CRT_CA}                  \
+                    -in certs/${CONF_CSR_CA_INTERNET}           \
+                    -out certs/${CONF_CRT_CA_INTERNET}
+
+    ${SHELL_RM} -rf private/${CONF_KEY_CA}
+
+    if [ -f certs/${CONF_CRT_CA_INTERNET} ]; then
+        echo_blue "签名完成。"
+    else
+        echo_yellow "签名失败。"
+    fi
+}
+
+########## ########## ########## ########## ##########
+# 生成 VPN 颁发机构证书请求文件。
 function req_ca_vpn () {
-    FILE_KEY=ca.vpn.ppno.net.key
-    FILE_CSR=ca.vpn.ppno.net.csr
     CONF_EXTENSIONS=v3_ca_vpn
-    CONF_SERIAL=E3E3E3020101
 
-    rm_file private/${FILE_KEY}
-    rm_file certs/${FILE_CSR}
+    rm_file private/${CONF_KEY_CA_VPN}
+    rm_file certs/${CONF_CSR_CA_VPN}
 
-    unzip_key ${FILE_KEY}
+    unzip_key ${CONF_KEY_CA_VPN}
+
+    if [ ! -f private/${CONF_KEY_CA_VPN} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
     
     export SUBJ_OU_0="GlobalDevSign VPN Authority"
     export SUBJ_OU_1="ca.vpn.ppno.net"
     export SUBJ_CN="GlobalDevSign VPN Authority"
 
-    echo_blue 请求开始。
-    ${SHELL_OPENSSL} req                                \
-                    -new                                \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -set_serial 0x${CONF_SERIAL}        \
-                    -key private/${FILE_KEY}            \
-                    -out certs/${FILE_CSR}
+    echo_blue "请求开始。"
+    ${SHELL_OPENSSL} req                                        \
+                    -new                                        \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -set_serial 0x${CONF_SER_CA_VPN}            \
+                    -key private/${CONF_KEY_CA_VPN}             \
+                    -out certs/${CONF_CSR_CA_VPN}
    
     unset SUBJ_OU_0
     unset SUBJ_OU_1
     unset SUBJ_CN
 
-    ${SHELL_RM} -rf private/${FILE_KEY}
+    ${SHELL_RM} -rf private/${CONF_KEY_CA_VPN}
 
-    echo_blue 请求完成：
-
-    ${SHELL_OPENSSL} req                                \
-                    -noout                              \
-                    -text                               \
-                    -in certs/${FILE_CSR}
+    if [ -f certs/${CONF_CSR_CA_VPN} ]; then
+        echo_blue "请求完成："
+        ${SHELL_OPENSSL} req                                    \
+                    -noout                                      \
+                    -text                                       \
+                    -in certs/${CONF_CSR_CA_VPN}
+    else
+        echo_yellow "生成请求文件失败。"
+    fi
 }
 
+########## ########## ########## ########## ##########
+# 签名 VPN 颁发机构证书。
 function sign_ca_vpn () {
-    FILE_KEY_CA=ca.ppno.net.key
-    FILE_CRT_CA=ca.ppno.net.crt
-    FILE_CSR=ca.vpn.ppno.net.csr
-    FILE_CRT=ca.vpn.ppno.net.crt
     CONF_EXTENSIONS=v3_ca_vpn
-    CONF_SERIAL=E3E3E3020101
 
-    rm_file private/${FILE_KEY_CA}
+    rm_file private/${CONF_KEY_CA}
 
-    unzip_key ${FILE_KEY_CA}
+    unzip_key ${CONF_KEY_CA}
+
+    if [ ! -f private/${CONF_KEY_CA} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
 
     # 设置当前使用的序列号。
-    ${SHELL_ECHO} ${CONF_SERIAL} > serial
+    ${SHELL_ECHO} ${CONF_SER_CA_VPN} > serial
 
     # 删除数据库中的当前使用的序列号。
-    del_exists_serial ${CONF_SERIAL}
+    del_exists_serial ${CONF_SER_CA_VPN}
 
-    ${SHELL_OPENSSL} ca                                 \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -startdate ${CONF_STARTDATE}        \
-                    -enddate ${CONF_ENDDATE}            \
-                    -keyfile private/${FILE_KEY_CA}     \
-                    -cert certs/${FILE_CRT_CA}          \
-                    -in certs/${FILE_CSR}               \
-                    -out certs/${FILE_CRT}
+    ${SHELL_OPENSSL} ca                                         \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -startdate ${CONF_STARTDATE}                \
+                    -enddate ${CONF_ENDDATE}                    \
+                    -keyfile private/${CONF_KEY_CA}             \
+                    -cert certs/${CONF_CRT_CA}                  \
+                    -in certs/${CONF_CSR_CA_VPN}                \
+                    -out certs/${CONF_CRT_CA_VPN}
 
-    ${SHELL_RM} -rf private/${FILE_KEY_CA}
+    ${SHELL_RM} -rf private/${CONF_KEY_CA}
 
-    echo_blue 签名完成。
+    if [ -f certs/${CONF_CRT_CA_VPN} ]; then
+        echo_blue "签名完成。"
+    else
+        echo_yellow "签名失败。"
+    fi
 }
 
+########## ########## ########## ########## ##########
+# 生成 OpenVPN 颁发机构证书请求文件。
 function req_ca_vpn_openvpn () {
-    FILE_KEY=ca.openvpn.vpn.ppno.net.key
-    FILE_CSR=ca.openvpn.vpn.ppno.net.csr
     CONF_EXTENSIONS=v3_ca_vpn_openvpn
-    CONF_SERIAL=E3E3E303010101
 
-    rm_file private/${FILE_KEY}
-    rm_file certs/${FILE_CSR}
+    rm_file private/${CONF_KEY_CA_VPN_OPENVPN}
+    rm_file certs/${CONF_CSR_CA_VPN_OPENVPN}
 
-    unzip_key ${FILE_KEY}
+    unzip_key ${CONF_KEY_CA_VPN_OPENVPN}
+
+    if [ ! -f private/${CONF_KEY_CA_VPN_OPENVPN} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
     
     export SUBJ_OU_0="GlobalDevSign OpenVPN Authority"
     export SUBJ_OU_1="ca.openvpn.vpn.ppno.net"
     export SUBJ_CN="GlobalDevSign OpenVPN Authority"
 
     echo_blue 请求开始。
-    ${SHELL_OPENSSL} req                                \
-                    -new                                \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -set_serial 0x${CONF_SERIAL}        \
-                    -key private/${FILE_KEY}            \
-                    -out certs/${FILE_CSR}
+    ${SHELL_OPENSSL} req                                        \
+                    -new                                        \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -set_serial 0x${CONF_SER_CA_VPN_OPENVPN}    \
+                    -key private/${CONF_KEY_CA_VPN_OPENVPN}     \
+                    -out certs/${CONF_CSR_CA_VPN_OPENVPN}
    
     unset SUBJ_OU_0
     unset SUBJ_OU_1
     unset SUBJ_CN
 
-    ${SHELL_RM} -rf private/${FILE_KEY}
+    ${SHELL_RM} -rf private/${CONF_KEY_CA_VPN_OPENVPN}
 
-    echo_blue 请求完成：
-
-    ${SHELL_OPENSSL} req                                \
-                    -noout                              \
-                    -text                               \
-                    -in certs/${FILE_CSR}
+    if [ -f certs/${CONF_CSR_CA_VPN_OPENVPN} ]; then
+        echo_blue "请求完成："
+        ${SHELL_OPENSSL} req                                    \
+                    -noout                                      \
+                    -text                                       \
+                    -in certs/${CONF_CSR_CA_VPN_OPENVPN}
+    else
+        echo_yellow "生成请求文件失败。"
+    fi
 }
 
+########## ########## ########## ########## ##########
+# 签名 OpenVPN 颁发机构证书。
 function sign_ca_vpn_openvpn () {
-    FILE_KEY_CA=ca.vpn.ppno.net.key
-    FILE_CRT_CA=ca.vpn.ppno.net.crt
-    FILE_CSR=ca.openvpn.vpn.ppno.net.csr
-    FILE_CRT=ca.openvpn.vpn.ppno.net.crt
     CONF_EXTENSIONS=v3_ca_vpn_openvpn
-    CONF_SERIAL=E3E3E303010101
 
-    rm_file private/${FILE_KEY_CA}
+    rm_file private/${CONF_KEY_CA_VPN}
 
-    unzip_key ${FILE_KEY_CA}
+    unzip_key ${CONF_KEY_CA_VPN}
+
+    if [ ! -f private/${CONF_KEY_CA_VPN} ]; then
+        echo_yellow "解压密钥失败。"
+        exit
+    fi
 
     # 设置当前使用的序列号。
-    ${SHELL_ECHO} ${CONF_SERIAL} > serial
+    ${SHELL_ECHO} ${CONF_SER_CA_VPN_OPENVPN} > serial
 
     # 删除数据库中的当前使用的序列号。
-    del_exists_serial ${CONF_SERIAL}
+    del_exists_serial ${CONF_SER_CA_VPN_OPENVPN}
 
-    ${SHELL_OPENSSL} ca                                 \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -startdate ${CONF_STARTDATE}        \
-                    -enddate ${CONF_ENDDATE}            \
-                    -keyfile private/${FILE_KEY_CA}     \
-                    -cert certs/${FILE_CRT_CA}          \
-                    -in certs/${FILE_CSR}               \
-                    -out certs/${FILE_CRT}
+    ${SHELL_OPENSSL} ca                                         \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -startdate ${CONF_STARTDATE}                \
+                    -enddate ${CONF_ENDDATE}                    \
+                    -keyfile private/${CONF_KEY_CA_VPN}         \
+                    -cert certs/${CONF_CRT_CA_VPN}              \
+                    -in certs/${CONF_CSR_CA_VPN_OPENVPN}        \
+                    -out certs/${CONF_CRT_CA_VPN_OPENVPN}
 
-    ${SHELL_RM} -rf private/${FILE_KEY_CA}
+    ${SHELL_RM} -rf private/${CONF_KEY_CA_VPN}
 
-    echo_blue 签名完成。
+    if [ -f certs/${CONF_CRT_CA_VPN_OPENVPN} ]; then
+        echo_blue "签名完成。"
+    else
+        echo_yellow "签名失败。"
+    fi
 }
 
 function req_vpn_openvpn_server () {
@@ -277,8 +466,13 @@ function req_vpn_openvpn_server () {
     SERVER_DOMAIN_BASE=server.openvpn.${CONF_DOMAIN}
     SERVER_DOMAIN=${SERVER_NAME}.${SERVER_DOMAIN_BASE}
 
-    # 服务端只用一个密钥对。
+    # 服务端如果没有定义专用密钥对，可以只用一个密钥对。
     FILE_KEY=${SERVER_DOMAIN_BASE}.key
+
+    if [ -f private/${SERVER_DOMAIN}.key.zip ]; then
+        FILE_KEY=${SERVER_DOMAIN}.key
+    fi    
+
     FILE_CSR=${SERVER_DOMAIN}.csr
     CONF_EXTENSIONS=v3_vpn_openvpn_server
     CONF_SERIAL=E3E3E30401010100${SERVER_ID}
@@ -483,10 +677,13 @@ case $1 in
     "selfsign_ca") selfsign_ca ;;
     "req_ca_vpn") req_ca_vpn ;;
     "sign_ca_vpn") sign_ca_vpn;;
+    "req_ca_internet") req_ca_internet;;
+    "sign_ca_internet") sign_ca_internet;;
     "req_ca_vpn_openvpn") req_ca_vpn_openvpn;;
     "sign_ca_vpn_openvpn") sign_ca_vpn_openvpn;;
     "req_vpn_openvpn_server") req_vpn_openvpn_server $2 $3 $4;;
     "sign_vpn_openvpn_server") sign_vpn_openvpn_server $2 $3 $4;;
     "req_vpn_openvpn_client") req_vpn_openvpn_client $2 $3 $4;;
     "sign_vpn_openvpn_client") sign_vpn_openvpn_client $2 $3 $4;;
+    "genkey") genkey  $2 $3 $4 $4;;
 esac
