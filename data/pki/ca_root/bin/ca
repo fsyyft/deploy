@@ -11,6 +11,8 @@ cd ${PATH_ROOT}
 . ${PATH_ROOT}/bin/functions
 echo_blue "进入工作目录：$(${SHELL_PWD})"
 
+PATH_CONFIG=${PATH_ROOT}/conf/ca.${CONF_DOMAIN}.conf
+
 ########## ########## ########## ########## ##########
 # 生成根证书请求文件。
 function req_ca () {

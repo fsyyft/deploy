@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# 脚本所在目录。
+# 这里要注意下，如果写 /usr/bin/cd 会有问题。
+PATH_SHELL_FOLDER=$(cd `dirname $0`;pwd)
+
+PATH_ROOT=${PATH_SHELL_FOLDER}/..
+cd ${PATH_ROOT}
+
+. ${PATH_ROOT}/../../shell/functions
+. ${PATH_ROOT}/../ca_root/bin/functions
+echo_blue "进入工作目录：$(${SHELL_PWD})"
+
+PATH_CONFIG=${PATH_ROOT}/conf/service.internet.conf
+
+CONF_DOM_TEST_PPNO_NET=test.ppno.net
+CONF_KEY_TEST_PPNO_NET=${CONF_DOM_TEST_PPNO_NET}.key
+CONF_CSR_TEST_PPNO_NET=${CONF_DOM_TEST_PPNO_NET}.csr
+CONF_CRT_TEST_PPNO_NET=${CONF_DOM_TEST_PPNO_NET}.crt
+CONF_SER_TEST_PPNO_NET=${CONF_SERIAL}0402010104
+
+########## ########## ########## ########## ##########
+# 生成 test.ppno.net 颁发机构证书请求文件。
+function req_test_ppno_net () {
+    req_common  ${CONF_KEY_TEST_PPNO_NET}                       \
+                ${CONF_CSR_TEST_PPNO_NET}                       \
+                ${CONF_SER_TEST_PPNO_NET}                       \
+                "v3_test_ppno_net"                              \
+                "GlobalDevSign Internet Service Authority"      \
+                "test.ppno.net"                                 \
+                "test.ppno.net"
+}
+
+########## ########## ########## ########## ##########
+# 签名 test.ppno.net 证书。
+function sign_test_ppno_net () {
+    sign_ca_common  ${CONF_KEY_CA_INTERNET_SERVICE}             \
+                    ${CONF_CRT_CA_INTERNET_SERVICE}             \
+                    ${CONF_CSR_TEST_PPNO_NET}                   \
+                    ${CONF_CRT_TEST_PPNO_NET}                   \
+                    ${CONF_SER_TEST_PPNO_NET}                   \
+                    "v3_test_ppno_net"
+}
+
+case $1 in
+    "req_test_ppno_net") req_test_ppno_net;;
+    "sign_test_ppno_net") sign_test_ppno_net;;
+    "genkey") genkey  $2 $3 $4 $4;;
+esac
