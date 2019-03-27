@@ -16,12 +16,12 @@ PATH_CONFIG=${PATH_ROOT}/conf/ca.${CONF_DOMAIN}.conf
 ########## ########## ########## ########## ##########
 # 生成根证书请求文件。
 function req_ca () {
-    req_common  ${CONF_KEY_CA}                         \
-                ${CONF_CSR_CA}                         \
-                ${CONF_SER_CA}                         \
-                "v3_ca_root"                           \
-                "GlobalDevSign Root CA"                \
-                "ca.${CONF_DOMAIN}"                    \
+    req_common  ${CONF_KEY_CA}                                  \
+                ${CONF_CSR_CA}                                  \
+                ${CONF_SER_CA}                                  \
+                "v3_ca_root"                                    \
+                "GlobalDevSign Root CA"                         \
+                "ca.${CONF_DOMAIN}"                             \
                 "GlobalDevSign Root CA"
 }
 
@@ -80,7 +80,7 @@ function req_ca_internet () {
 ########## ########## ########## ########## ##########
 # 签名 Internet 颁发机构证书。
 function sign_ca_internet () {
-    sign_ca_common  ${CONF_KEY_CA}                              \
+    sign_common  ${CONF_KEY_CA}                                 \
                     ${CONF_CRT_CA}                              \
                     ${CONF_CSR_CA_INTERNET}                     \
                     ${CONF_CRT_CA_INTERNET}                     \
@@ -103,7 +103,7 @@ function req_ca_internet_service () {
 ########## ########## ########## ########## ##########
 # 签名 Internet Internet 颁发机构证书。
 function sign_ca_internet_service () {
-    sign_ca_common  ${CONF_KEY_CA_INTERNET}                     \
+    sign_common  ${CONF_KEY_CA_INTERNET}                        \
                     ${CONF_CRT_CA_INTERNET}                     \
                     ${CONF_CSR_CA_INTERNET_SERVICE}             \
                     ${CONF_CRT_CA_INTERNET_SERVICE}             \
@@ -126,7 +126,7 @@ function req_ca_internet_personal () {
 ########## ########## ########## ########## ##########
 # 签名 Internet Personal 颁发机构证书。
 function sign_ca_internet_personal () {
-    sign_ca_common  ${CONF_KEY_CA_INTERNET}                     \
+    sign_common  ${CONF_KEY_CA_INTERNET}                        \
                     ${CONF_CRT_CA_INTERNET}                     \
                     ${CONF_CSR_CA_INTERNET_PERSONAL}            \
                     ${CONF_CRT_CA_INTERNET_PERSONAL}            \
@@ -150,7 +150,7 @@ function req_ca_vpn () {
 ########## ########## ########## ########## ##########
 # 签名 VPN 颁发机构证书。
 function sign_ca_vpn () {
-    sign_ca_common  ${CONF_KEY_CA}                              \
+    sign_common  ${CONF_KEY_CA}                                 \
                     ${CONF_CRT_CA}                              \
                     ${CONF_CSR_CA_VPN}                          \
                     ${CONF_CRT_CA_VPN}                          \
@@ -173,7 +173,7 @@ function req_ca_vpn_openvpn () {
 ########## ########## ########## ########## ##########
 # 签名 OpenVPN 颁发机构证书。
 function sign_ca_vpn_openvpn () {
-    sign_ca_common  ${CONF_KEY_CA_VPN}                          \
+    sign_common  ${CONF_KEY_CA_VPN}                             \
                     ${CONF_CRT_CA_VPN}                          \
                     ${CONF_CSR_CA_VPN_OPENVPN}                  \
                     ${CONF_CRT_CA_VPN_OPENVPN}                  \
@@ -197,7 +197,7 @@ function req_ca_test () {
 ########## ########## ########## ########## ##########
 # 签名测试颁发机构证书。
 function sign_ca_test () {
-    sign_ca_common  ${CONF_KEY_CA}                              \
+    sign_common  ${CONF_KEY_CA}                                 \
                     ${CONF_CRT_CA}                              \
                     ${CONF_CSR_CA_TEST}                         \
                     ${CONF_CRT_CA_TEST}                         \
@@ -237,12 +237,12 @@ function req_vpn_openvpn_server () {
     export SUBJ_OPENVPN_IP=${SERVER_IP}
 
     echo_blue 请求开始。
-    ${SHELL_OPENSSL} req                                \
-                    -new                                \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -set_serial 0x${CONF_SERIAL}        \
-                    -key private/${FILE_KEY}            \
+    ${SHELL_OPENSSL} req                                        \
+                    -new                                        \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -set_serial 0x${CONF_SERIAL}                \
+                    -key private/${FILE_KEY}                    \
                     -out certs/openvpn/${FILE_CSR}
    
     unset SUBJ_OU_0
@@ -255,9 +255,9 @@ function req_vpn_openvpn_server () {
 
     echo_blue 请求完成：
 
-    ${SHELL_OPENSSL} req                                \
-                    -noout                              \
-                    -text                               \
+    ${SHELL_OPENSSL} req                                        \
+                    -noout                                      \
+                    -text                                       \
                     -in certs/openvpn/${FILE_CSR}
 }
 
@@ -292,14 +292,14 @@ function sign_vpn_openvpn_server () {
     export SUBJ_OPENVPN_SERVER_NAME=${SERVER_NAME}
     export SUBJ_OPENVPN_IP=${SERVER_IP}
 
-    ${SHELL_OPENSSL} ca                                 \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -startdate ${CONF_STARTDATE}        \
-                    -enddate ${CONF_ENDDATE}            \
-                    -keyfile private/${FILE_KEY_CA}     \
-                    -cert certs/${FILE_CRT_CA}          \
-                    -in certs/openvpn/${FILE_CSR}       \
+    ${SHELL_OPENSSL} ca                                         \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -startdate ${CONF_STARTDATE}                \
+                    -enddate ${CONF_ENDDATE}                    \
+                    -keyfile private/${FILE_KEY_CA}             \
+                    -cert certs/${FILE_CRT_CA}                  \
+                    -in certs/openvpn/${FILE_CSR}               \
                     -out certs/openvpn/${FILE_CRT}
 
     
@@ -341,12 +341,12 @@ function req_vpn_openvpn_client () {
     export SUBJ_OPENVPN_IP=${CLIENT_IP}
 
     echo_blue 请求开始。
-    ${SHELL_OPENSSL} req                                \
-                    -new                                \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -set_serial 0x${CONF_SERIAL}        \
-                    -key private/${FILE_KEY}            \
+    ${SHELL_OPENSSL} req                                        \
+                    -new                                        \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -set_serial 0x${CONF_SERIAL}                \
+                    -key private/${FILE_KEY}                    \
                     -out certs/openvpn/${FILE_CSR}
    
     unset SUBJ_OU_0
@@ -359,9 +359,9 @@ function req_vpn_openvpn_client () {
 
     echo_blue 请求完成：
 
-    ${SHELL_OPENSSL} req                                \
-                    -noout                              \
-                    -text                               \
+    ${SHELL_OPENSSL} req                                        \
+                    -noout                                      \
+                    -text                                       \
                     -in certs/openvpn/${FILE_CSR}
 }
 
@@ -398,14 +398,14 @@ function sign_vpn_openvpn_client () {
     export SUBJ_OPENVPN_CLIENT_NAME=${CLIENT_NAME}
     export SUBJ_OPENVPN_IP=${CLIENT_IP}
 
-    ${SHELL_OPENSSL} ca                                 \
-                    -config ${PATH_CONFIG}              \
-                    -extensions ${CONF_EXTENSIONS}      \
-                    -startdate ${CONF_STARTDATE}        \
-                    -enddate ${CONF_ENDDATE}            \
-                    -keyfile private/${FILE_KEY_CA}     \
-                    -cert certs/${FILE_CRT_CA}          \
-                    -in certs/openvpn/${FILE_CSR}       \
+    ${SHELL_OPENSSL} ca                                         \
+                    -config ${PATH_CONFIG}                      \
+                    -extensions ${CONF_EXTENSIONS}              \
+                    -startdate ${CONF_STARTDATE}                \
+                    -enddate ${CONF_ENDDATE}                    \
+                    -keyfile private/${FILE_KEY_CA}             \
+                    -cert certs/${FILE_CRT_CA}                  \
+                    -in certs/openvpn/${FILE_CSR}               \
                     -out certs/openvpn/${FILE_CRT}
 
     

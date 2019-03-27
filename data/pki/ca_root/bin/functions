@@ -186,7 +186,7 @@ function req_common() {
 # 参数4：证书。
 # 参数5：序列号。
 # 参数6：扩展配置项名称。
-function sign_ca_common () {
+function sign_common () {
     FILE_KEY_CA=$1
     FILE_CRT_CA=$2
     FILE_CSR=$3
