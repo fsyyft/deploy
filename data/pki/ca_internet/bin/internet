@@ -11,7 +11,7 @@ cd ${PATH_ROOT}
 . ${PATH_ROOT}/../ca_root/bin/functions
 echo_blue "进入工作目录：$(${SHELL_PWD})"
 
-PATH_CONFIG=${PATH_ROOT}/conf/service.internet.conf
+PATH_CONFIG=${PATH_ROOT}/conf/internet.conf
 
 CONF_DOM_TEST_PPNO_NET=test.ppno.net
 CONF_KEY_TEST_PPNO_NET=${CONF_DOM_TEST_PPNO_NET}.key

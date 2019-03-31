@@ -52,8 +52,8 @@
 [fsyyft@kvm-centos7-openssl pki]# ca_root/bin/ca genkey ca.service.internet.ppno.net 4096 123456 123456
 [fsyyft@kvm-centos7-openssl pki]# ca_root/bin/ca req_ca_internet_service
 [fsyyft@kvm-centos7-openssl pki]# ca_root/bin/ca sign_ca_internet_service
-[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/private/ca.service.internet.ppno.net.key.zip ca_internet_service/private/
-[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/certs/ca.service.internet.ppno.net.crt ca_internet_service/certs/
+[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/private/ca.service.internet.ppno.net.key.zip ca_internet/private/
+[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/certs/ca.service.internet.ppno.net.crt ca_internet/certs/
 ```
 
 ###### 生成并签名 test.ppno.net 服务端证书
@@ -63,9 +63,9 @@
 - 使用 Service CA 证书进行签名。
 
 ```
-[fsyyft@kvm-centos7-openssl pki]# ca_internet_service/bin/service genkey test.ppno.net 4096 123456 123456
-[fsyyft@kvm-centos7-openssl pki]# ca_internet_service/bin/service req_test_ppno_net
-[fsyyft@kvm-centos7-openssl pki]# ca_internet_service/bin/service sign_test_ppno_net
+[fsyyft@kvm-centos7-openssl pki]# ca_internet/bin/service genkey test.ppno.net 4096 123456 123456
+[fsyyft@kvm-centos7-openssl pki]# ca_internet/bin/service req_test_ppno_net
+[fsyyft@kvm-centos7-openssl pki]# ca_internet/bin/service sign_test_ppno_net
 ```
 
 ##### 生成并签名 Personal CA 证书
@@ -79,8 +79,8 @@
 [fsyyft@kvm-centos7-openssl pki]# ca_root/bin/ca genkey ca.personal.internet.ppno.net 4096 123456 123456
 [fsyyft@kvm-centos7-openssl pki]# ca_root/bin/ca req_ca_internet_personal
 [fsyyft@kvm-centos7-openssl pki]# ca_root/bin/ca sign_ca_internet_personal
-[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/private/ca.personal.internet.ppno.net.key.zip ca_internet_service/private/
-[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/certs/ca.personal.internet.ppno.net.crt ca_internet_service/certs/
+[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/private/ca.personal.internet.ppno.net.key.zip ca_internet/private/
+[fsyyft@kvm-centos7-openssl pki]# /usr/bin/cp ca_root/certs/ca.personal.internet.ppno.net.crt ca_internet/certs/
 ```
 
 ###### 生成并签名 test 个人证书
@@ -90,7 +90,7 @@
 - 使用 Personal CA 证书进行签名。
 
 ```
-[fsyyft@kvm-centos7-openssl pki]# ca_internet_service/bin/service genkey test.personal 4096 123456 123456
-[fsyyft@kvm-centos7-openssl pki]# ca_internet_service/bin/service req_personal_test
-[fsyyft@kvm-centos7-openssl pki]# ca_internet_service/bin/service sign_personal_test
+[fsyyft@kvm-centos7-openssl pki]# ca_internet/bin/service genkey test.personal 4096 123456 123456
+[fsyyft@kvm-centos7-openssl pki]# ca_internet/bin/service req_personal_test
+[fsyyft@kvm-centos7-openssl pki]# ca_internet/bin/service sign_personal_test
 ```

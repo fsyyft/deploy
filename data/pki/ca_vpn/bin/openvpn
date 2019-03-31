@@ -1,15 +1,14 @@
 #!/bin/bash
 
-. ../../shell/functions
-
 # 脚本所在目录。
 # 这里要注意下，如果写 /usr/bin/cd 会有问题。
-PATH_SHELL_FOLDER=$(cd `${SHELL_DIRNAME} $0`;${SHELL_PWD})
+PATH_SHELL_FOLDER=$(cd `dirname $0`;pwd)
 
-PATH_ROOT=${PATH_SHELL_FOLDER}/../
-PATH_CMD=${PATH_ROOT}/bin/ca.ppno.net
-
+PATH_ROOT=${PATH_SHELL_FOLDER}/..
+PATH_CMD=${PATH_ROOT}/bin/vpn
 cd ${PATH_ROOT}
+
+. ${PATH_ROOT}/../../shell/functions
 echo_blue 进入工作目录：$(${SHELL_PWD})
 
 ########## ########## ########## ########## ##########
@@ -42,7 +41,7 @@ function server() {
     ${PATH_CMD} sign_vpn_openvpn_server ${SERVER_NAME} ${SERVER_ID} ${SERVER_IP}
     echo_yellow "完成请求证书签名。"
     
-    ${SHELL_LS} -la certs/openvpn | ${SHELL_GREP} ${SERVER_NAME}
+    ${SHELL_LS} -la certs/| ${SHELL_GREP} ${SERVER_NAME}
 }
 
 ########## ########## ########## ########## ##########
@@ -158,7 +157,7 @@ function client() {
     ${PATH_CMD} sign_vpn_openvpn_client ${CLIENT_NAME} ${CLIENT_ID} ${CLIENT_IP}
     echo_yellow "完成请求证书签名。"
     
-    ${SHELL_LS} -la certs/openvpn | ${SHELL_GREP} ${CLIENT_NAME}
+    ${SHELL_LS} -la certs/ | ${SHELL_GREP} ${CLIENT_NAME}
 }
 
 ########## ########## ########## ########## ##########
